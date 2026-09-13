@@ -1,0 +1,49 @@
+name: Build and Push Container Image
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Log in to GHCR with podman
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} \
+            -u ${{ github.actor }} --password-stdin
+
+      - name: Set lowercase image name
+        id: image
+        run: |
+          echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Build image with podman
+        run: |
+          podman build \
+            -f Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest \
+            .
+
+      - name: Push image with podman
+        run: |
+          podman push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }}
+          podman push ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest
