@@ -30,4 +30,5 @@ RUN mkdir -p /opt/repos && cd /opt/repos && git clone https://github.com/ps2dev/
 RUN cd /opt/repos/ps2toolchain && ./toolchain.sh
 RUN cd /opt/repos && git clone https://github.com/ps2dev/ps2sdk.git
 RUN cd /opt/repos/ps2sdk && make && make install
+RUN apt-get install -y vim
 CMD ["/bin/bash"]
